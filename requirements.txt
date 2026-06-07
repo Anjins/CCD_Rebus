@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+transformers==4.44.2
+torch
+spacy
+deep-translator
+httpx
+pydantic
+cachetools

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div id="mobile-block">
+  <canvas id="mobile-bg"></canvas>
+  <div class="mb-content">
+    <div class="mb-msg">esta experiência só funciona em desktop</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const el = document.getElementById('mobile-block');
+  if (!el) return;
+
+  const EMO_COLORS = {
+    alegria:     [255, 180,  15],
+    tristeza:    [ 45, 110, 220],
+    medo:        [130,  40, 190],
+    raiva:       [235,  35,  35],
+    surpresa:    [255, 105,  20],
+    antecipacao: [ 15, 210, 200],
+  };
+
+  const avg = { tristeza: 0.5, medo: 0.35, surpresa: 0.15 };
+
+  function paint() {
+    const bc = document.getElementById('mobile-bg');
+    const W  = window.innerWidth;
+    const H  = window.innerHeight;
+    bc.width  = W;
+    bc.height = H;
+    const c = bc.getContext('2d');
+
+    const weighted = [];
+    let totalW = 0;
+    for (const [k, col] of Object.entries(EMO_COLORS)) {
+      const w = avg[k] || 0;
+      if (w > 0.01) { weighted.push({ col, w }); totalW += w; }
+    }
+    if (!weighted.length) { weighted.push({ col: [60, 60, 80], w: 1 }); totalW = 1; }
+    weighted.sort((a, b) => b.w - a.w);
+
+    const dom = weighted[0].col;
+    c.fillStyle = `rgb(${Math.round(dom[0]*0.12)},${Math.round(dom[1]*0.12)},${Math.round(dom[2]*0.12)})`;
+    c.fillRect(0, 0, W, H);
+
+    const positions = [
+      [0.15,0.12],[0.85,0.10],[0.05,0.55],
+      [0.95,0.55],[0.50,0.50],[0.25,0.85],
+      [0.75,0.82],[0.50,0.15],
+    ];
+    const spots = [];
+    for (const item of weighted) {
+      const count = Math.round((item.w / totalW) * positions.length);
+      for (let i = 0; i < count; i++) spots.push(item);
+    }
+    while (spots.length < positions.length) spots.push(weighted[0]);
+    spots.length = positions.length;
+
+    for (let i = 0; i < positions.length; i++) {
+      const [cx, cy] = positions[i];
+      const s = spots[i];
+      const [r, g, b] = s.col;
+      const radius = Math.max(W, H) * (0.65 + (s.w / totalW) * 0.45);
+      const grad = c.createRadialGradient(cx*W, cy*H, 0, cx*W, cy*H, radius);
+      grad.addColorStop(0,    `rgba(${r},${g},${b},0.88)`);
+      grad.addColorStop(0.45, `rgba(${r},${g},${b},0.35)`);
+      grad.addColorStop(1,    `rgba(${r},${g},${b},0)`);
+      c.fillStyle = grad;
+      c.fillRect(0, 0, W, H);
+    }
+
+    const veil = c.createRadialGradient(W*.5, H*.5, W*.3, W*.5, H*.5, W*1.1);
+    veil.addColorStop(0, 'rgba(0,0,0,0)');
+    veil.addColorStop(1, 'rgba(0,0,0,0.65)');
+    c.fillStyle = veil;
+    c.fillRect(0, 0, W, H);
+  }
+
+  paint();
+  window.addEventListener('resize', paint);
+})();
+</script>
+<div class="left-col">
+  <div class="left-header">
+<svg id="brandLogo" viewBox="0 0 1761.54 492.1" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path d="M601.76,344.95c-4.63,24.07-13.88,42.8-27.76,56.22-13.88,13.43-31.7,20.13-53.44,20.13-28.69,0-51.6-10.64-68.71-31.93-14.11-17.53-22.39-41.38-24.87-71.49h253.92c0-63.85-13.19-115.44-39.56-154.78-26.37-39.32-69.41-59-129.1-59-36.09,0-67.22,7.87-93.35,23.6-18,10.83-33.14,24.84-45.43,42.02.9-7.22,1.37-14.74,1.37-22.59,0-48.59-15.74-85.13-47.2-109.66C296.13,12.96,249.63.69,188.09.69H0l1.39,240.15-1.39,240.84h97.17l-1.39-180.46h83.98c20.36,0,35.63,2.2,45.81,6.59,10.17,4.4,17.58,12.61,22.21,24.64,4.62,12.04,8.56,30.54,11.8,55.53,2.78,27.76,5.31,48.48,7.64,62.12,2.31,13.65,5.09,24.18,8.33,31.58h99.25c-3.71-6.47-6.71-14.68-9.02-24.64-2.32-9.94-4.4-22.09-6.25-36.44l-2.41-25.07c.78,1.66,1.58,3.31,2.41,4.95,14.8,29.15,35.85,51.71,63.16,67.67,27.3,15.96,59.22,23.95,95.78,23.95,45.81,0,82.01-12.25,108.62-36.79,26.6-24.52,43.38-54.37,50.32-89.54l-75.65-20.82ZM238.41,219.33c-14.12,6.02-31.82,9.02-53.1,9.02h-89.53l.69-148.53h90.92c31.93,0,55.53,6.25,70.79,18.74,15.27,12.49,22.91,30.78,22.91,54.83,0,16.2-3.59,29.74-10.76,40.6-7.18,10.88-17.82,19.33-31.93,25.33ZM308.86,275.89c-3.45-2.39-7.2-4.56-11.21-6.54,18.45-7.1,33.72-17.33,45.82-30.69-4.09,18.23-6.16,37.92-6.16,59.09,0,3.68.09,7.31.22,10.9-7.14-13.5-16.68-24.44-28.67-32.76ZM515.69,170.74c18.05,0,33.32,4.86,45.81,14.58,12.49,9.72,21.4,23.14,26.72,40.26,3.27,10.55,5.18,21.89,5.73,34.01h-165.35c3.47-24.61,10.63-43.94,21.49-57.95,15.96-20.58,37.83-30.89,65.59-30.89Z"/>
+  <path d="M756.53,403.6c-9.72-8.56-23.6-12.84-41.64-12.84s-31.93,4.28-41.64,12.84c-9.72,8.57-14.58,20.94-14.58,37.13s4.86,28.7,14.58,37.48c9.72,8.78,23.6,13.19,41.64,13.19s31.93-4.4,41.64-13.19c9.72-8.78,14.58-21.28,14.58-37.48s-4.86-28.57-14.58-37.13Z"/>
+  <path d="M756.53,120.42c-9.72-8.56-23.6-12.84-41.64-12.84s-31.93,4.28-41.64,12.84c-9.72,8.57-14.58,20.94-14.58,37.13s4.86,28.7,14.58,37.48c9.72,8.79,23.6,13.19,41.64,13.19s31.93-4.39,41.64-13.19c9.72-8.78,14.58-21.28,14.58-37.48s-4.86-28.57-14.58-37.13Z"/>
+  <path d="M1747.66,321.7c-9.26-15.5-23.6-28.22-43.03-38.17-19.43-9.94-44.66-17.01-75.65-21.17-31.93-4.17-53.68-10.29-65.24-18.39-11.57-8.09-17.35-19.32-17.35-33.66,0-12.49,4.86-22.21,14.58-29.15,9.72-6.94,23.83-10.41,42.34-10.41,21.28,0,37.13,4.75,47.54,14.23,10.41,9.49,17.23,24.64,20.47,45.46l76.35-20.82c-6.94-35.63-22.45-62.12-46.5-79.47-24.06-17.35-57.85-26.03-101.33-26.03s-79.24,9.96-104.46,29.85c-25.23,19.9-37.83,46.27-37.83,79.12s11,60.04,32.97,78.78c21.97,18.74,56.79,30.89,104.46,36.44,27.3,3.24,47.08,9.02,59.34,17.35,12.25,8.33,18.39,19.43,18.39,33.32,0,15.27-5.79,26.84-17.35,34.7-11.57,7.87-28.23,11.8-49.97,11.8-25.92,0-45.81-6.01-59.69-18.05-13.88-12.03-21.76-28.22-23.6-48.59l-65.62,18.06-.31-86.77.69-176.99h-90.23v201.97c0,19.9-3.12,37.25-9.37,52.06-6.25,14.81-15.04,26.27-26.38,34.36-11.34,8.1-24.41,12.15-39.22,12.15-21.75,0-38.64-7.05-50.67-21.17-12.04-14.11-18.05-35.51-18.05-64.2v-38.17l.69-176.99h-90.23v103.34c-2.44-8.91-5.32-17.34-8.67-25.26-12.26-28.91-29.74-50.67-52.4-65.24-22.68-14.58-49.52-21.86-80.51-21.86-25.45,0-47.09,5.55-64.9,16.66-17.82,11.1-32.05,24.53-42.69,40.26h-1.39V0h-91.62v481.69h91.62v-47.2h2.08c9.72,15.27,23.6,28.69,41.64,40.26,18.05,11.56,39.79,17.35,65.24,17.35,30.54,0,57.14-7.29,79.82-21.86,22.67-14.58,40.25-36.44,52.75-65.59,4.27-9.97,7.8-20.72,10.61-32.22,3.66,35.67,13.75,63.09,30.34,82.19,21.28,24.53,52.28,36.79,93.01,36.79,24.52,0,46.04-5.67,64.55-17.01,18.5-11.33,33.08-26.48,43.73-45.46h1.39l-1.39,52.75h90.23l-.24-66.28c8.54,19.86,21.33,35.95,38.41,48.24,26.38,18.97,63.16,28.46,110.36,28.46,33.32,0,61.65-4.75,85.02-14.23,23.36-9.48,41.06-22.9,53.1-40.26,12.03-17.35,18.05-37.13,18.05-59.34s-4.63-41.06-13.88-56.57ZM1029.65,386.95c-14.58,20.6-35.52,30.89-62.81,30.89-14.81,0-28.58-3.7-41.3-11.1-12.73-7.4-23.25-20.01-31.58-37.83-8.33-17.81-12.49-41.75-12.49-71.84,0-26.38,3.82-48.47,11.45-66.28,7.64-17.81,17.81-30.99,30.54-39.56,12.72-8.56,27.18-12.84,43.38-12.84,27.3,0,48.24,10.3,62.81,30.89,14.58,20.59,21.86,50.09,21.86,88.49s-7.29,68.61-21.86,89.19Z"/>
+</svg>
+  </div>
+
+  <div class="input-label">texto</div>
+  <textarea id="textInput" placeholder="Escreve o que sentes…" autocomplete="off" spellcheck="false"></textarea>
+  <div id="surpresaAtribuicao"></div>
+
+  <div class="left-footer">
+    <button id="statusBtn">Pronto</button>
+    <button onclick="abrirSurpreendeme()">Surpreende-me</button>
+    <button onclick="exportPDF()">Exportar</button>
+    <button onclick="clearText()">Limpar</button>
+  </div>
+</div>
+
+<div class="canvas-wrap">
+
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="progress-track">
+      <div class="progress-fill" id="loadingProgress"></div>
+    </div>
+  </div>
+
+  <div class="a4-shadow">
+    <canvas id="c"></canvas>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-section" id="emotionSection" style="display:none">
+    <div class="panel-title">Emoções</div>
+    <div class="emo-list" id="emotionBar"></div>
+    <div class="tension-row">
+      <span class="tension-label">tensão</span>
+      <div class="tension-track"><div class="tension-fill" id="tensionFill" style="width:0%"></div></div>
+      <span class="tension-val" id="tensionVal">0</span>
+    </div>
+  </div>
+
+  <div class="panel-section sel-editor" id="selEditor">
+    <div class="panel-title">Seleção</div>
+    <div class="sel-header">
+      <span class="sel-word" id="selWord">—</span>
+      <span class="sel-type" id="selType">palavra</span>
+    </div>
+
+    <div class="icon-picker" id="iconPicker">
+      <div class="panel-title" style="margin-bottom:8px">Ícone</div>
+      <div class="icon-loading" id="iconLoading">A carregar opções…</div>
+      <div class="icon-grid" id="iconGrid"></div>
+    </div>
+
+    <div id="nonRebusSliders">
+      <div class="slider-row">
+        <label>Densidade</label>
+        <input type="range" id="selDensity" min="0" max="200" value="60" oninput="onSelSlider()">
+        <span class="slider-val" id="selDensityVal">60</span>
+      </div>
+      <div class="slider-row">
+        <label>Traço</label>
+        <input type="range" id="selThickness" min="0.5" max="4.0" step="0.1" value="1.0" oninput="onSelSlider()">
+        <span class="slider-val" id="selThicknessVal">1.0</span>
+      </div>
+    </div>
+
+    <div class="panel-title" style="margin-top:14px">Emoções da seleção</div>
+    <div class="emo-editors" id="selEmoEditors"></div>
+    <button class="reset-sel" onclick="resetSelection()">Repor valores</button>
+  </div>
+
+  <div class="panel-spacer"></div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="fecharModal(event)">
+  <div class="modal">
+    <h2>Surpreende-me</h2>
+    <p>escolhe uma emoção ou deixa em branco</p>
+    <div class="emo-grid" id="emoGrid"></div>
+    <div class="modal-actions">
+      <button onclick="fecharModalBtn()">Cancelar</button>
+      <button class="primary" onclick="confirmarSurpreendeme()">Trazer poema</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let skeletonData        = null;
+  let textMode            = false;
+  let isShapeFilled       = true;
+  let invertMode          = false;
+
+  let paragraphData       = [];
+  let rebusWordsGlobal    = new Set();
+  let rebusCache          = {};
+  let wordBoxes           = [];
+  let selectedWord        = null;
+  let wordOverrides       = {};
+  let overallAvgGlobal    = null;
+  let overallTensaoGlobal = 0;
+
+  const EMOCOES = [
+    "alegria", "tristeza", "confiança", "nojo",
+    "medo", "raiva", "surpresa", "antecipação"
+  ];
+
+  let emocaoSelecionada = null;
+
+  function abrirSurpreendeme() {
+    emocaoSelecionada = null;
+
+    const grid = document.getElementById("emoGrid");
+    grid.innerHTML = "";
+    EMOCOES.forEach(e => {
+      const btn = document.createElement("button");
+      btn.className = "emo-btn";
+      btn.textContent = e;
+      btn.onclick = () => {
+        grid.querySelectorAll(".emo-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        emocaoSelecionada = e;
+      };
+      grid.appendChild(btn);
+    });
+
+    document.getElementById("modalOverlay").classList.add("open");
+  }
+
+  function fecharModal(e) {
+    if (e.target === document.getElementById("modalOverlay")) fecharModalBtn();
+  }
+
+  function fecharModalBtn() {
+    document.getElementById("modalOverlay").classList.remove("open");
+    emocaoSelecionada = null;
+  }
+
+async function confirmarSurpreendeme() {
+  const emocao = emocaoSelecionada || "neutro";
+  fecharModalBtn();
+
+  try {
+    const res = await fetch(`/poema-aleatorio?emocao=${encodeURIComponent(emocao)}`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+
+    const input = document.getElementById("textInput");
+    input.value = data.linhas.join("\n");
+    input.dispatchEvent(new InputEvent("input", { bubbles: true }));
+
+    const hetero = data["heterónimo"] ? ` (${data["heterónimo"]})` : "";
+    document.getElementById("surpresaAtribuicao").textContent =
+      `${data.titulo} — ${data.autor}${hetero}`;
+
+  } catch (e) {
+    alert("Não foi possível carregar um poema. Verifica que o servidor está a correr.");
+  }
+}
+</script>
+
+<script src="/static/utils.js"></script>
+<script src="/static/draw.js"></script>
+<script src="/static/analysis.js"></script>
+<script src="/static/ui.js"></script>
+
+<script>
+  fetch('/skeleton.json')
+    .then(r => r.ok ? r.json() : null)
+    .then(d => { if (d) skeletonData = d; })
+    .catch(() => {})
+    .finally(() => { setupCanvas(); draw(); });
+
+  window.addEventListener('resize', draw);
+</script>
+
+<script>
+  (function () {
+    let lastLen = null;
+    setInterval(async () => {
+      try {
+        const res  = await fetch(location.href + '?_=' + Date.now(), { cache: 'no-store' });
+        const text = await res.text();
+        const len  = text.length;
+        if (lastLen === null) { lastLen = len; return; }
+        if (len !== lastLen) location.reload();
+      } catch (e) {}
+    }, 1000);
+  })();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</body>
+</html>

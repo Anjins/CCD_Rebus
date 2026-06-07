@@ -1,0 +1,21 @@
+# Virtual environment
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Hugging Face model cache
+.cache/
+~/.cache/huggingface/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Env files
+.env
