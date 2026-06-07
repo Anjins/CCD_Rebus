@@ -141,7 +141,7 @@ body {
 .left-footer button#statusBtn { display: none; }
 
 .canvas-wrap {
-  position: relative; overflow: auto;
+  position: relative; overflow: hidden;
   display: flex; align-items: center; justify-content: center; padding: 32px;
 }
 .a4-shadow {
