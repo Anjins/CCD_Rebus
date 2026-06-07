@@ -1,3 +1,11 @@
+---
+title: Rebus
+emoji: 🤖
+colorFrom: purple
+colorTo: pink
+sdk: docker
+pinned: false
+---
 # Re🤖 — Laboratório de Tensão Narrativa
 
 Ferramenta de composição visual a partir de texto. Escreves um poema ou texto em português, e a aplicação analisa as emoções de cada frase e gera uma composição tipográfica onde o peso, cor e forma de cada palavra reflete o que estás a sentir.
