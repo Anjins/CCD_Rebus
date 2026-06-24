@@ -72,6 +72,73 @@ PLUTCHIK = [
     "medo", "raiva", "surpresa", "antecipação"
 ]
 
+# Quota mínima garantida para a emoção vencedora, mesmo em quase-empates.
+# Ex.: 0.80 significa que a emoção dominante representa sempre pelo menos
+# 80% do "peso de cor" final; as restantes dividem entre si os 20% que
+# sobram, na mesma proporção relativa que tinham entre elas.
+DOMINANT_MIN_SHARE = 0.80
+
+# Emoções que nunca podem ser escolhidas como vencedora/predominante.
+# Continuam a contar normalmente para a fatia "resto" (vestígios na cor),
+# só ficam de fora da escolha de quem domina.
+EMOCOES_NAO_DOMINANTES = {"surpresa", "antecipação", "confiança"}
+
+def sharpen_emotions(emocoes: dict) -> dict:
+    """
+    Recebe o vetor contextual de emoções (não precisa somar 1) e devolve uma
+    versão onde EXISTE SEMPRE uma única emoção claramente dominante: essa
+    emoção fica garantida com pelo menos DOMINANT_MIN_SHARE do peso total,
+    independentemente de estar perto de um empate com outra. As restantes
+    emoções (incluindo as não-dominantes) dividem o peso que sobra mantendo
+    as proporções relativas entre si (para preservar vestígios proporcionais,
+    não apagar tudo por igual).
+
+    A vencedora é escolhida apenas entre as emoções permitidas (todas exceto
+    EMOCOES_NAO_DOMINANTES) — surpresa, antecipação e confiança nunca ficam
+    com a cor predominante, mas continuam a contribuir normalmente para a
+    fatia "resto", tal como qualquer outra emoção secundária.
+
+    Isto garante "sempre uma cor predominante": mesmo um empate quase
+    perfeito (ex.: medo 0.50 vs tristeza 0.49) resulta numa cor dominada
+    pela emoção escolhida como vencedora (a primeira em caso de empate
+    exato), em vez de uma mistura 50/50.
+    """
+    total_bruto = sum(emocoes.values())
+    if total_bruto <= 0:
+        return emocoes
+
+    candidatas = {
+        emo: v for emo, v in emocoes.items()
+        if emo not in EMOCOES_NAO_DOMINANTES and v > 0
+    }
+
+    if candidatas:
+        vencedora = max(candidatas, key=candidatas.get)
+    else:
+        # Caso extremo: nenhuma emoção permitida tem peso > 0 — todo o sinal
+        # está em surpresa/antecipação/confiança. Cai-se para a mais forte
+        # entre essas, em vez de "vencer" por desempate arbitrário a 0.
+        vencedora = max(emocoes, key=emocoes.get)
+
+    resto = {emo: v for emo, v in emocoes.items() if emo != vencedora}
+    total_resto = sum(resto.values())
+
+    resultado = {vencedora: DOMINANT_MIN_SHARE * total_bruto}
+
+    parcela_restante = (1 - DOMINANT_MIN_SHARE) * total_bruto
+    if total_resto > 0:
+        for emo, v in resto.items():
+            resultado[emo] = (v / total_resto) * parcela_restante
+    else:
+        # Sem mais nenhuma emoção com peso > 0: distribui igualmente
+        # (caso raro, ex. vetor totalmente vazio fora da vencedora).
+        n = len(resto) or 1
+        for emo in resto:
+            resultado[emo] = parcela_restante / n
+
+    return resultado
+
+
 DICIONARIO_EMOCOES_EN = {
     "alegria":      "joy",
     "tristeza":     "sadness",
@@ -223,7 +290,7 @@ async def pesquisar_conceptnet(client: httpx.AsyncClient, conceito: str, relacao
 
 async def gerar_termos_criativos(palavra_ctx: str, emocao_en: str) -> list[str]:
     print(f"A cruzar redes semânticas dinâmicas para '{palavra_ctx}' + '{emocao_en}'...")
-    
+
     resultados_brutos = await asyncio.gather(
         pesquisar_conceptnet(http_client, emocao_en, "SymbolOf", 10),
         pesquisar_conceptnet(http_client, palavra_ctx, "RelatedTo", 15),
@@ -387,10 +454,16 @@ async def analisar_narrativa(dados: TextoInput):
         ))
         tensao_anterior = tensao_final
 
+        # Sharpening aplica-se só ao vetor que sai para o frontend (cor/visual).
+        # tensao_final e memoria_emocoes (acima) usam sempre o vetor contextual
+        # original, para não distorcer a curva de tensão nem acumular
+        # dominância de frase para frase.
+        emocoes_visuais = sharpen_emotions(emocoes_contextuais)
+
         linha_frases.append({
             "momento": i + 1,
             "texto":   frase,
-            "emocoes": emocoes_contextuais,
+            "emocoes": emocoes_visuais,
             "tensao":  tensao_final
         })
 

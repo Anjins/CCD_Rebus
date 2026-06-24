@@ -94,19 +94,50 @@ function getDominantEmo(avg) {
 }
 
 function blendEmotionColor(avg) {
-  let r = 0, g = 0, b = 0, total = 0;
-  for (const [normKey, col] of Object.entries(EMO_COLORS)) {
+  // O backend já envia um vetor onde a emoção vencedora tem ~80% do peso
+  // (ver sharpen_emotions em servidor.py). Aqui não voltamos a "suavizar"
+  // com uma curva de potência sobre esse valor — isso só diluía o resultado
+  // outra vez. Em vez disso, escolhe-se explicitamente a vencedora (a maior
+  // entrada do vetor) e força-se uma quota mínima de impacto na cor final,
+  // para garantir sempre uma cor claramente predominante.
+  const DOMINANT_MIN_SHARE = 0.92; // quota mínima da vencedora na cor final
+
+  let rawTotal = 0;
+  const pesos = {};
+  for (const normKey of Object.keys(EMO_COLORS)) {
     const ptKey = PLUTCHIK_PT.find(p => emoKey(p) === normKey) || normKey;
-    const w = avg[ptKey] || 0;
-    r += col[0] * w; g += col[1] * w; b += col[2] * w; total += w;
+    const v = avg[ptKey] || 0;
+    pesos[normKey] = v;
+    rawTotal += v;
   }
-  if (total === 0) return '#3a3228';
+  if (rawTotal === 0) return '#3a3228';
+
+  let vencedora = null, melhorVal = -1;
+  for (const [normKey, v] of Object.entries(pesos)) {
+    if (v > melhorVal) { melhorVal = v; vencedora = normKey; }
+  }
+
+  const restoTotal = rawTotal - melhorVal;
+
+  let r = 0, g = 0, b = 0;
+  for (const [normKey, col] of Object.entries(EMO_COLORS)) {
+    let w;
+    if (normKey === vencedora) {
+      w = DOMINANT_MIN_SHARE;
+    } else if (restoTotal > 0) {
+      w = (pesos[normKey] / restoTotal) * (1 - DOMINANT_MIN_SHARE);
+    } else {
+      w = 0;
+    }
+    r += col[0] * w; g += col[1] * w; b += col[2] * w;
+  }
+
   const hex = (() => {
-    const h = v => Math.round(Math.min(255, v / total)).toString(16).padStart(2, '0');
+    const h = v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
     return `#${h(r)}${h(g)}${h(b)}`;
   })();
   const [hh, ss, ll] = rgbToHsl(...hexToRgb(hex));
-  return hslToHex(hh, Math.min(70, ss * 1.2 + 10), Math.max(22, Math.min(52, ll * 0.88)));
+  return hslToHex(hh, Math.min(78, ss * 1.3 + 12), Math.max(22, Math.min(52, ll * 0.88)));
 }
 
 function pickShapeType(normEmo, charCode, seed) {

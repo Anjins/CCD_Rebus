@@ -5,7 +5,7 @@ function emoToParams(avg, tensao) {
   const get = k => avg[k] || avg[PLUTCHIK_PT.find(p => emoKey(p) === emoKey(k))] || 0;
   const rawThick = 0.6 + Math.max(get('raiva'), get('medo')) * 3.2;
   return {
-    density:   Math.round(5 + tensao * 155),
+    density:   Math.round(40 + tensao * 180), 
     thickness: +Math.min(rawThick, 1.6).toFixed(2),
     color:     blendEmotionColor(avg),
   };
